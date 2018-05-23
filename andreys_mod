@@ -76,7 +76,8 @@ SimulateDynamicPanelTrend <- function(T, N, sigma, beta, dyn_gamma, num_dynamic_
     group_by(index) %>% 
     mutate(treatment.date = sample(1:T,1)) %>%
     mutate(treated = time > treatment.date) %>%
-    mutate(relative.time = ifelse(time > treatment.date & time <= treatment.date + num_dynamic_pers, time - treatment.date, 0), 
+    mutate(relative_full.time = time - treatment.date, 
+           relative.time = ifelse(time > treatment.date & time <= treatment.date + num_dynamic_pers, time - treatment.date, 0), 
            t = as.numeric(time)
            , factor_time = as.factor(relative.time)
     )
@@ -84,7 +85,7 @@ SimulateDynamicPanelTrend <- function(T, N, sigma, beta, dyn_gamma, num_dynamic_
   as.data.frame() %>%
   bind_cols(df) 
   
-  df$y <- with(df, gamma * relative.time + dyn_gamma[1]*factor_time1 + dyn_gamma[2]*factor_time2 + dyn_gamma[3]*factor_time3 + dyn_gamma[4]*factor_time4 + dyn_gamma[5]*factor_time5 + unit.effects[index] + time.effects[time] + epsilon) 
+  df$y <- with(df, gamma * relative_full.time + dyn_gamma[1]*factor_time1 + dyn_gamma[2]*factor_time2 + dyn_gamma[3]*factor_time3 + dyn_gamma[4]*factor_time4 + dyn_gamma[5]*factor_time5 + unit.effects[index] + time.effects[time] + epsilon) 
   df
 }
 
@@ -93,7 +94,7 @@ this_num_dynamic_pers <- 5
 this_dyn_gamma <- runif(this_num_dynamic_pers)
 df <- SimulateDynamicPanelTrend(T = 10, N = 100, sigma = 0.1, dyn_gamma = this_dyn_gamma, num_dynamic_pers = this_num_dynamic_pers, gamma = 0)
 
-m <- felm(y ~ treated + relative.time | index + factor(index):t + time | 0 | index, data = df)
+m <- felm(y ~ treated + relative_full.time | index + factor(index):t + time | 0 | index, data = df)
 summary(m)
 mean(this_dyn_gamma)
 
@@ -103,7 +104,7 @@ summary(m_dyn)
 print(this_dyn_gamma)
 
 ### Time trends leads to colinearity
-m_dyn <- felm(y ~ factor_time1 + factor_time2 + factor_time3 + factor_time4 + factor_time5 + relative.time| index + time | 0 | index, data = df)
+m_dyn <- felm(y ~ factor_time1 + factor_time2 + factor_time3 + factor_time4 + factor_time5 + relative_full.time| index + time | 0 | index, data = df)
 summary(m_dyn)
 print(this_dyn_gamma)
 
